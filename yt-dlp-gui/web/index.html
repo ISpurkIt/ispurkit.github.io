@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="ru" data-theme="dark" data-accent="sunset">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="token" content="__TOKEN__">
+<title>YT-DLP Studio</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="grad" gradientUnits="userSpaceOnUse" x1="2" y1="2" x2="22" y2="22">
+      <stop offset="0" stop-color="var(--a1)"/><stop offset=".55" stop-color="var(--a2)"/><stop offset="1" stop-color="var(--a3)"/>
+    </linearGradient>
+  </defs>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="i-queue" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  <symbol id="i-film" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.5"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="i-retry" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
+  <symbol id="i-subs" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2.5"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="13" y1="12" x2="18" y2="12"/><line x1="6" y1="16" x2="14" y2="16"/><line x1="16.5" y1="16" x2="18" y2="16"/></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+  <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+  <symbol id="i-list-batch" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A5.6 5.6 0 0 0 22 9.8C22 5.5 17.5 2 12 2z"/><circle cx="7.5" cy="10.5" r="1.2"/><circle cx="12" cy="7" r="1.2"/><circle cx="16.5" cy="10.5" r="1.2"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+  <symbol id="i-cookie" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><circle cx="8.5" cy="8.5" r=".8"/><circle cx="16" cy="15.5" r=".8"/><circle cx="12" cy="12" r=".8"/><circle cx="11" cy="17" r=".8"/><circle cx="7" cy="14" r=".8"/></symbol>
+  <symbol id="i-logo" viewBox="0 0 48 48"><path d="M24 6v24" stroke-width="4.5"/><path d="M14 21l10 10 10-10" stroke-width="4.5"/><path d="M10 40h28" stroke-width="4.5"/></symbol>
+</svg>
+
+<div class="backdrop" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="grain"></i></div>
+
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo"><svg><use href="#i-logo"/></svg></div>
+      <div class="brand-text">
+        <b>YT-DLP <span class="grad-text">Studio</span></b>
+        <small id="ver">yt-dlp …</small>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-page="download"><svg class="ic"><use href="#i-download"/></svg><span>Загрузка</span></button>
+      <button class="nav-item" data-page="queue"><svg class="ic"><use href="#i-queue"/></svg><span>Очередь</span><em class="badge" id="badge-queue" hidden>0</em></button>
+      <button class="nav-item" data-page="history"><svg class="ic"><use href="#i-clock"/></svg><span>История</span><em class="badge muted" id="badge-history" hidden>0</em></button>
+      <button class="nav-item" data-page="settings"><svg class="ic"><use href="#i-sliders"/></svg><span>Настройки</span></button>
+    </nav>
+
+    <div class="side-activity" id="side-activity" hidden>
+      <div class="side-title">Сейчас качается <span id="side-speed" class="mono"></span></div>
+      <div id="side-list"></div>
+    </div>
+
+    <div class="side-foot">
+      <div class="status-pill" id="ffmpeg-pill" title="ffmpeg нужен для склейки видео и аудио, конвертации и встраивания">
+        <i class="dot"></i><span>ffmpeg</span>
+      </div>
+      <button class="icon-btn" id="theme-toggle" title="Сменить тему"><svg class="ic"><use href="#i-moon"/></svg></button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+
+    <!-- ===== DOWNLOAD PAGE ===== -->
+    <section class="page active" id="page-download">
+      <header class="hero">
+        <h1>Что будем <span class="grad-text">скачивать</span>?</h1>
+        <p class="sub">Вставьте ссылку на видео, плейлист или канал — YouTube, VK, RuTube, Twitch, TikTok и ещё 1800+ сайтов.</p>
+      </header>
+
+      <div class="card url-card" id="url-card">
+        <div class="url-row" id="url-single">
+          <svg class="ic url-ic"><use href="#i-link"/></svg>
+          <input id="url" type="url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" spellcheck="false">
+          <button class="icon-btn ghost" id="btn-clear-url" title="Очистить" hidden><svg class="ic"><use href="#i-x"/></svg></button>
+          <button class="btn ghost" id="btn-paste" title="Вставить из буфера"><svg class="ic"><use href="#i-clipboard"/></svg><span>Вставить</span></button>
+          <button class="btn primary" id="btn-analyze"><svg class="ic"><use href="#i-search"/></svg><span>Анализ</span></button>
+        </div>
+        <div class="url-batch" id="url-batch" hidden>
+          <textarea id="urls" rows="6" placeholder="По одной ссылке на строку&#10;https://youtu.be/…&#10;https://vk.com/video…" spellcheck="false"></textarea>
+          <div class="batch-foot"><span id="batch-count" class="muted">0 ссылок</span></div>
+        </div>
+        <div class="url-foot">
+          <label class="mini-switch"><input type="checkbox" id="batch-toggle"><i></i><span>Пакетный режим</span></label>
+          <span class="muted small hint-keys">Enter — анализ · Ctrl+Enter — сразу скачать</span>
+        </div>
+      </div>
+
+      <!-- analysis result -->
+      <div class="card preview" id="preview" hidden></div>
+
+      <!-- mode & quality -->
+      <div class="card mode-card">
+        <div class="seg big" data-opt="mode">
+          <button data-v="video"><svg class="ic"><use href="#i-film"/></svg><span>Видео</span></button>
+          <button data-v="audio"><svg class="ic"><use href="#i-music"/></svg><span>Только аудио</span></button>
+          <button data-v="custom"><svg class="ic"><use href="#i-code"/></svg><span>Свой формат</span></button>
+          <i class="seg-glider"></i>
+        </div>
+
+        <div class="mode-panel" data-mode="video">
+          <div class="field">
+            <label>Качество</label>
+            <div class="chips" data-opt="quality">
+              <button data-v="best">Лучшее</button><button data-v="2160">4K</button><button data-v="1440">1440p</button>
+              <button data-v="1080">1080p</button><button data-v="720">720p</button><button data-v="480">480p</button>
+              <button data-v="360">360p</button><button data-v="worst">Минимум</button>
+            </div>
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label>Контейнер</label>
+              <div class="chips" data-opt="container">
+                <button data-v="auto">Авто</button><button data-v="mp4">MP4</button><button data-v="mkv">MKV</button><button data-v="webm">WEBM</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Кодек видео</label>
+              <div class="chips" data-opt="vcodec">
+                <button data-v="any">Любой</button><button data-v="h264" title="Максимальная совместимость">H.264</button><button data-v="vp9">VP9</button><button data-v="av01" title="Лучшее сжатие">AV1</button>
+              </div>
+            </div>
+          </div>
+          <label class="row inline"><span class="switch"><input type="checkbox" data-opt="fps60"><i></i></span><span>Предпочитать 60 fps</span></label>
+        </div>
+
+        <div class="mode-panel" data-mode="audio">
+          <div class="field">
+            <label>Формат аудио</label>
+            <div class="chips" data-opt="audio_format">
+              <button data-v="best" title="Без перекодирования">Оригинал</button><button data-v="mp3">MP3</button><button data-v="m4a">M4A</button>
+              <button data-v="opus">OPUS</button><button data-v="flac">FLAC</button><button data-v="wav">WAV</button><button data-v="aac">AAC</button>
+            </div>
+          </div>
+          <div class="field" id="audio-quality-field">
+            <label>Битрейт</label>
+            <div class="chips" data-opt="audio_quality">
+              <button data-v="0">Максимум</button><button data-v="320K">320k</button><button data-v="256K">256k</button>
+              <button data-v="192K">192k</button><button data-v="128K">128k</button><button data-v="96K">96k</button>
+            </div>
+          </div>
+          <label class="row inline"><span class="switch"><input type="checkbox" data-opt="keep_video"><i></i></span><span>Сохранить и исходное видео</span></label>
+        </div>
+
+        <div class="mode-panel" data-mode="custom">
+          <div class="field-grid">
+            <div class="field">
+              <label>Формат <code>-f</code></label>
+              <input type="text" data-opt="custom_format" class="mono" placeholder="bv*[height<=1080]+ba/b" spellcheck="false">
+            </div>
+            <div class="field">
+              <label>Сортировка <code>-S</code></label>
+              <input type="text" data-opt="format_sort" class="mono" placeholder="res,fps,vcodec:h264" spellcheck="false">
+            </div>
+          </div>
+          <div class="chips small examples">
+            <button data-fill="custom_format" data-val="bv*+ba/b">bv*+ba/b</button>
+            <button data-fill="custom_format" data-val="bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b">1080p mp4</button>
+            <button data-fill="custom_format" data-val="bv*[vcodec^=avc1]+ba/b">только H.264</button>
+            <button data-fill="custom_format" data-val="bv*[filesize<500M]+ba/b">до 500 МБ</button>
+            <button data-fill="custom_format" data-val="ba[language^=ru]/ba">аудио на русском</button>
+          </div>
+          <p class="hint">Нажмите «Анализ» — и выберите конкретные потоки прямо в таблице форматов.</p>
+        </div>
+      </div>
+
+      <!-- advanced -->
+      <div class="acc-list">
+        <details class="card acc" data-acc="output" open>
+          <summary><svg class="ic acc-ic"><use href="#i-folder"/></svg><b>Сохранение</b><span class="acc-sum" data-sum="output"></span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+          <div class="acc-body">
+            <div class="field">
+              <label>Папка</label>
+              <div class="input-group">
+                <input type="text" data-opt="output_dir" spellcheck="false">
+                <button class="btn ghost" data-pick="output_dir" data-kind="dir"><svg class="ic"><use href="#i-folder"/></svg><span>Обзор</span></button>
+                <button class="icon-btn ghost" id="btn-open-outdir" title="Открыть папку"><svg class="ic"><use href="#i-external"/></svg></button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Шаблон имени файла</label>
+              <div class="input-group">
+                <input type="text" data-opt="filename_template" class="mono" id="tpl-input" spellcheck="false">
+                <select id="tpl-presets" title="Готовые шаблоны">
+                  <option value="">Шаблоны…</option>
+                  <option value="%(title)s [%(id)s].%(ext)s">Название [id]</option>
+                  <option value="%(title)s.%(ext)s">Только название</option>
+                  <option value="%(uploader)s - %(title)s.%(ext)s">Автор - Название</option>
+                  <option value="%(upload_date>%Y-%m-%d)s %(title)s.%(ext)s">Дата Название</option>
+                  <option value="%(uploader)s/%(title)s.%(ext)s">Папка автора/Название</option>
+                  <option value="%(title)s (%(resolution)s).%(ext)s">Название (разрешение)</option>
+                </select>
+              </div>
+              <div class="chips small tokens">
+                <button data-token="%(title)s">название</button><button data-token="%(id)s">id</button>
+                <button data-token="%(uploader)s">автор</button><button data-token="%(upload_date>%Y-%m-%d)s">дата</button>
+                <button data-token="%(resolution)s">разрешение</button><button data-token="%(playlist_index)s">№ в плейлисте</button>
+                <button data-token="%(ext)s">расширение</button>
+              </div>
+            </div>
+            <div class="rows">
+              <label class="row"><div><b>Плейлист — в отдельную папку</b><small>Папка с названием плейлиста</small></div><span class="switch"><input type="checkbox" data-opt="playlist_subfolder"><i></i></span></label>
+              <label class="row"><div><b>Нумеровать видео плейлиста</b><small>«01 - Название»</small></div><span class="switch"><input type="checkbox" data-opt="playlist_numbering"><i></i></span></label>
+              <label class="row"><div><b>Безопасные имена файлов</b><small>Только латиница, без пробелов и спецсимволов</small></div><span class="switch"><input type="checkbox" data-opt="restrict_filenames"><i></i></span></label>
+              <label class="row"><div><b>Архив загрузок</b><small>Не скачивать повторно то, что уже скачано</small></div><span class="switch"><input type="checkbox" data-opt="use_archive"><i></i></span></label>
+              <div class="row"><div><b>Если файл уже есть</b></div>
+                <div class="seg small" data-opt="overwrite"><button data-v="skip">Пропустить</button><button data-v="force">Перезаписать</button><i class="seg-glider"></i></div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="card acc" data-acc="subs">
+          <summary><svg class="ic acc-ic"><use href="#i-subs"/></svg><b>Субтитры</b><span class="acc-sum" data-sum="subs"></span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+          <div class="acc-body">
+            <div class="rows">
+              <label class="row"><div><b>Скачивать субтитры</b></div><span class="switch"><input type="checkbox" data-opt="subtitles"><i></i></span></label>
+            </div>
+            <div class="dependent" data-when="subtitles">
+              <div class="field">
+                <label>Языки <small class="muted">через запятую; можно регулярные выражения: <code>en.*</code>, <code>all</code>, <code>-live_chat</code></small></label>
+                <input type="text" data-opt="sub_langs" class="mono" spellcheck="false">
+                <div class="chips small" id="sub-lang-quick">
+                  <button data-lang="ru">ru</button><button data-lang="en">en</button><button data-lang="uk">uk</button><button data-lang="de">de</button>
+                  <button data-lang="es">es</button><button data-lang="fr">fr</button><button data-lang="ja">ja</button><button data-lang="all">все</button>
+                </div>
+              </div>
+              <div class="rows">
+                <label class="row"><div><b>Автоматические субтитры</b><small>Сгенерированные площадкой (YouTube)</small></div><span class="switch"><input type="checkbox" data-opt="auto_subs"><i></i></span></label>
+                <label class="row"><div><b>Встроить в видео</b><small>Дорожкой внутри файла, а не рядом</small></div><span class="switch"><input type="checkbox" data-opt="embed_subs"><i></i></span></label>
+                <div class="row"><div><b>Формат</b></div>
+                  <div class="seg small" data-opt="sub_format"><button data-v="original">Исходный</button><button data-v="srt">SRT</button><button data-v="vtt">VTT</button><button data-v="ass">ASS</button><i class="seg-glider"></i></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="card acc" data-acc="post">
+          <summary><svg class="ic acc-ic"><use href="#i-image"/></svg><b>Обложка, метаданные, главы</b><span class="acc-sum" data-sum="post"></span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+          <div class="acc-body">
+            <div class="rows two">
+              <label class="row"><div><b>Встроить обложку</b><small>Превью как обложка файла</small></div><span class="switch"><input type="checkbox" data-opt="embed_thumbnail"><i></i></span></label>
+              <label class="row"><div><b>Сохранить обложку</b><small>Отдельным файлом</small></div><span class="switch"><input type="checkbox" data-opt="write_thumbnail"><i></i></span></label>
+              <label class="row"><div><b>Метаданные</b><small>Название, автор, дата, описание</small></div><span class="switch"><input type="checkbox" data-opt="embed_metadata"><i></i></span></label>
+              <label class="row"><div><b>Главы</b><small>Разметка глав внутри видео</small></div><span class="switch"><input type="checkbox" data-opt="embed_chapters"><i></i></span></label>
+              <label class="row"><div><b>Разделить по главам</b><small>Каждая глава — отдельный файл</small></div><span class="switch"><input type="checkbox" data-opt="split_chapters"><i></i></span></label>
+              <label class="row"><div><b>Описание</b><small>Файл .description</small></div><span class="switch"><input type="checkbox" data-opt="write_description"><i></i></span></label>
+              <label class="row"><div><b>Info JSON</b><small>Все метаданные в .info.json</small></div><span class="switch"><input type="checkbox" data-opt="write_info_json"><i></i></span></label>
+            </div>
+          </div>
+        </details>
+
+        <details class="card acc" data-acc="sponsor">
+          <summary><svg class="ic acc-ic"><use href="#i-shield"/></svg><b>SponsorBlock</b><span class="acc-sum" data-sum="sponsor"></span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+          <div class="acc-body">
+            <p class="hint">Реклама и лишние вставки по базе <a href="https://sponsor.ajay.app" target="_blank" rel="noreferrer">SponsorBlock</a> (только YouTube).</p>
+            <div class="seg" data-opt="sponsorblock"><button data-v="off">Выключено</button><button data-v="mark">Отметить главами</button><button data-v="remove">Вырезать</button><i class="seg-glider"></i></div>
+            <div class="chips multi dependent" data-multi="sponsorblock_categories" data-when="sponsorblock">
+              <button data-v="sponsor">Спонсор</button><button data-v="selfpromo">Самореклама</button><button data-v="interaction">«Подпишитесь»</button>
+              <button data-v="intro">Заставка</button><button data-v="outro">Концовка</button><button data-v="preview">Превью/повтор</button>
+              <button data-v="hook">Зацепка</button><button data-v="filler">Филлер</button><button data-v="music_offtopic">Не музыка</button>
+            </div>
+          </div>
+        </details>
+
+        <details class="card acc" data-acc="range">
+          <summary><svg class="ic acc-ic"><use href="#i-scissors"/></svg><b>Фрагмент и плейлист</b><span class="acc-sum" data-sum="range"></span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+          <div class="acc-body">
+            <div class="field">
+              <label>Скачать только фрагмент <small class="muted">— время в формате 1:23, 01:02:03 или секунды</small></label>
+              <div class="range-inputs">
+                <input type="text" data-opt="section_start" class="mono" placeholder="с начала">
+                <span class="range-dash"></span>
+                <input type="text" data-opt="section_end" class="mono" placeholder="до конца">
+                <button class="btn ghost" id="btn-clear-range"><svg class="ic"><use href="#i-x"/></svg><span>Сбросить</span></button>
+              </div>
+            </div>
+            <div class="rows">
+              <label class="row"><div><b>Только видео, без плейлиста</b><small>Если ссылка содержит и видео, и плейлист</small></div><span class="switch"><input type="checkbox" data-opt="no_playlist"><i></i></span></label>
+            </div>
+            <div class="field-grid">
+              <div class="field">
+                <label>Элементы плейлиста <small class="muted">например 1-5,8,10:</small></label>
+                <input type="text" data-opt="playlist_items" class="mono" placeholder="все" spellcheck="false">
+              </div>
+              <div class="rows">
+                <label class="row"><div><b>В обратном порядке</b></div><span class="switch"><input type="checkbox" data-opt="playlist_reverse"><i></i></span></label>
+                <label class="row"><div><b>В случайном порядке</b></div><span class="switch"><input type="checkbox" data-opt="playlist_random"><i></i></span></label>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="card acc" data-acc="net">
+          <summary><svg class="ic acc-ic"><use href="#i-globe"/></svg><b>Сеть и авторизация</b><span class="acc-sum" data-sum="net"></span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+          <div class="acc-body">
+            <div class="field-grid">
+              <div class="field">
+                <label>Cookies из браузера <small class="muted">— для приватных и 18+ видео</small></label>
+                <select data-opt="cookies_browser">
+                  <option value="">Не использовать</option>
+                  <option value="chrome">Chrome</option><option value="firefox">Firefox</option><option value="edge">Edge</option>
+                  <option value="yandex">Яндекс Браузер</option><option value="brave">Brave</option><option value="opera">Opera</option>
+                  <option value="vivaldi">Vivaldi</option><option value="chromium">Chromium</option><option value="safari">Safari</option><option value="whale">Whale</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Файл cookies.txt</label>
+                <div class="input-group">
+                  <input type="text" data-opt="cookies_file" placeholder="не выбран" spellcheck="false">
+                  <button class="btn ghost" data-pick="cookies_file" data-kind="file"><svg class="ic"><use href="#i-cookie"/></svg><span>Выбрать</span></button>
+                </div>
+              </div>
+              <div class="field">
+                <label>Прокси</label>
+                <input type="text" data-opt="proxy" class="mono" placeholder="socks5://127.0.0.1:1080" spellcheck="false">
+              </div>
+              <div class="field">
+                <label>Ограничение скорости</label>
+                <input type="text" data-opt="rate_limit" class="mono" placeholder="без ограничений (напр. 5M)" spellcheck="false">
+              </div>
+              <div class="field">
+                <label>Повторы при ошибках</label>
+                <input type="number" min="0" max="100" data-opt="retries" class="mono">
+              </div>
+              <div class="field">
+                <label>Параллельных фрагментов: <b data-show="concurrent_fragments"></b></label>
+                <input type="range" min="1" max="16" data-opt="concurrent_fragments">
+              </div>
+              <div class="field">
+                <label>Страна для обхода геоблока</label>
+                <input type="text" data-opt="geo_bypass_country" class="mono" maxlength="2" placeholder="напр. US" spellcheck="false">
+              </div>
+              <div class="field">
+                <label>Имитировать браузер <small class="muted">(нужен curl_cffi)</small></label>
+                <select data-opt="impersonate">
+                  <option value="">Нет</option><option value="chrome">Chrome</option><option value="edge">Edge</option>
+                  <option value="safari">Safari</option><option value="firefox">Firefox</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="card acc" data-acc="pro">
+          <summary><svg class="ic acc-ic"><use href="#i-tool"/></svg><b>Для профи</b><span class="acc-sum" data-sum="pro"></span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+          <div class="acc-body">
+            <div class="field">
+              <label>Дополнительные аргументы yt-dlp <small class="muted">— добавляются в конец команды, как в консоли</small></label>
+              <textarea data-opt="extra_args" class="mono" rows="3" placeholder="--no-mtime --limit-rate 10M --match-filter &quot;duration < 600&quot;" spellcheck="false"></textarea>
+            </div>
+            <div class="rows">
+              <label class="row"><div><b>Учитывать конфиг yt-dlp</b><small>Ваш yt-dlp.conf из консольной версии</small></div><span class="switch"><input type="checkbox" data-opt="use_config"><i></i></span></label>
+            </div>
+            <p class="hint">Справка по всем параметрам: <a href="https://github.com/yt-dlp/yt-dlp#usage-and-options" target="_blank" rel="noreferrer">github.com/yt-dlp/yt-dlp</a></p>
+          </div>
+        </details>
+      </div>
+
+      <div class="spacer"></div>
+
+      <!-- command bar -->
+      <div class="cmdbar">
+        <div class="cmd-wrap">
+          <div class="cmd-head">
+            <span><svg class="ic"><use href="#i-terminal"/></svg> Команда</span>
+            <button class="link-btn" id="btn-copy-cmd"><svg class="ic"><use href="#i-copy"/></svg>Копировать</button>
+          </div>
+          <code class="cmd" id="cmd"></code>
+          <div class="cmd-error" id="cmd-error" hidden></div>
+        </div>
+        <button class="btn primary huge" id="btn-download"><svg class="ic"><use href="#i-download"/></svg><span>Скачать</span></button>
+      </div>
+    </section>
+
+    <!-- ===== QUEUE ===== -->
+    <section class="page" id="page-queue">
+      <header class="page-head">
+        <div>
+          <h2>Очередь</h2>
+          <p class="muted" id="queue-summary">Пока пусто</p>
+        </div>
+        <div class="toolbar">
+          <button class="btn ghost" id="btn-pause-all"><svg class="ic"><use href="#i-pause"/></svg><span>Пауза всех</span></button>
+          <button class="btn ghost" id="btn-resume-all"><svg class="ic"><use href="#i-play"/></svg><span>Продолжить</span></button>
+          <button class="btn ghost" id="btn-clear-done"><svg class="ic"><use href="#i-trash"/></svg><span>Убрать завершённые</span></button>
+        </div>
+      </header>
+      <div class="task-list" id="task-list"></div>
+      <div class="empty" id="queue-empty">
+        <div class="empty-art"><svg><use href="#i-queue"/></svg></div>
+        <b>Очередь пуста</b>
+        <p>Добавьте ссылку на странице «Загрузка» — прогресс появится здесь.</p>
+        <button class="btn primary" data-goto="download"><svg class="ic"><use href="#i-download"/></svg><span>К загрузке</span></button>
+      </div>
+    </section>
+
+    <!-- ===== HISTORY ===== -->
+    <section class="page" id="page-history">
+      <header class="page-head">
+        <div>
+          <h2>История</h2>
+          <p class="muted" id="history-summary"></p>
+        </div>
+        <div class="toolbar">
+          <div class="search"><svg class="ic"><use href="#i-search"/></svg><input id="history-search" placeholder="Поиск по истории"></div>
+          <button class="btn ghost" id="btn-clear-history"><svg class="ic"><use href="#i-trash"/></svg><span>Очистить</span></button>
+        </div>
+      </header>
+      <div class="history-list" id="history-list"></div>
+      <div class="empty" id="history-empty">
+        <div class="empty-art"><svg><use href="#i-clock"/></svg></div>
+        <b>Здесь появятся скачанные файлы</b>
+        <p>История хранится локально на вашем компьютере.</p>
+      </div>
+    </section>
+
+    <!-- ===== SETTINGS ===== -->
+    <section class="page" id="page-settings">
+      <header class="page-head"><div><h2>Настройки</h2><p class="muted">Параметры загрузки сохраняются автоматически</p></div></header>
+
+      <div class="settings-grid">
+        <div class="card pad">
+          <h3><svg class="ic"><use href="#i-palette"/></svg>Оформление</h3>
+          <div class="row"><div><b>Тема</b></div>
+            <div class="seg small" data-app="theme"><button data-v="dark">Тёмная</button><button data-v="light">Светлая</button><button data-v="system">Системная</button><i class="seg-glider"></i></div>
+          </div>
+          <div class="field">
+            <label>Акцент</label>
+            <div class="swatches" data-app="accent">
+              <button data-v="sunset" title="Закат"></button><button data-v="neon" title="Неон"></button>
+              <button data-v="aurora" title="Аврора"></button><button data-v="candy" title="Конфета"></button>
+              <button data-v="lime" title="Лайм"></button><button data-v="ocean" title="Океан"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card pad">
+          <h3><svg class="ic"><use href="#i-zap"/></svg>Очередь</h3>
+          <div class="field">
+            <label>Одновременных загрузок: <b data-show-app="max_concurrent"></b></label>
+            <input type="range" min="1" max="8" data-app="max_concurrent">
+          </div>
+          <label class="row"><div><b>Уведомления</b><small>Когда загрузка завершилась, а окно свёрнуто</small></div><span class="switch"><input type="checkbox" data-app="notify"><i></i></span></label>
+          <label class="row"><div><b>Следить за буфером обмена</b><small>Предлагать скопированные ссылки</small></div><span class="switch"><input type="checkbox" data-app="clipboard_watch"><i></i></span></label>
+        </div>
+
+        <div class="card pad">
+          <h3><svg class="ic"><use href="#i-up"/></svg>yt-dlp</h3>
+          <div class="kv"><span>Версия yt-dlp</span><b id="kv-ytdlp" class="mono"></b></div>
+          <div class="kv"><span>Python</span><b id="kv-python" class="mono"></b></div>
+          <div class="kv"><span>ffmpeg</span><b id="kv-ffmpeg" class="mono"></b></div>
+          <div class="kv"><span>Папка настроек</span><b id="kv-config" class="mono"></b></div>
+          <div class="ffmpeg-help" id="ffmpeg-help" hidden>
+            <svg class="ic"><use href="#i-alert"/></svg>
+            <div><b>ffmpeg не найден.</b> Без него нельзя склеить видео 1080p+ со звуком, сконвертировать в MP3 и встроить обложку.
+              Установите ffmpeg (<code>winget install ffmpeg</code> / <code>brew install ffmpeg</code> / <code>sudo apt install ffmpeg</code>)
+              или положите <code>ffmpeg</code> в папку <code>bin</code> рядом с приложением и перезапустите его.</div>
+          </div>
+          <div class="btn-row">
+            <button class="btn primary" id="btn-update"><svg class="ic"><use href="#i-up"/></svg><span>Обновить yt-dlp</span></button>
+            <button class="btn ghost" id="btn-restart"><svg class="ic"><use href="#i-retry"/></svg><span>Перезапустить</span></button>
+          </div>
+          <pre class="update-log" id="update-log" hidden></pre>
+        </div>
+
+        <div class="card pad">
+          <h3><svg class="ic"><use href="#i-sliders"/></svg>Параметры загрузки</h3>
+          <p class="hint">Все переключатели на странице «Загрузка» запоминаются между запусками. Если что-то пошло не так — верните значения по умолчанию.</p>
+          <div class="btn-row"><button class="btn ghost danger" id="btn-reset-opts"><svg class="ic"><use href="#i-retry"/></svg><span>Сбросить параметры</span></button></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- log modal -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-card">
+    <header>
+      <div><b id="modal-title">Журнал</b><small id="modal-sub" class="muted"></small></div>
+      <div class="toolbar">
+        <button class="btn ghost small" id="modal-copy"><svg class="ic"><use href="#i-copy"/></svg><span>Копировать</span></button>
+        <button class="icon-btn ghost" id="modal-close"><svg class="ic"><use href="#i-x"/></svg></button>
+      </div>
+    </header>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<div class="drop-overlay" id="drop-overlay"><div><svg class="ic"><use href="#i-link"/></svg><b>Отпустите, чтобы добавить ссылку</b></div></div>
+
+<script src="app.js"></script>
+</body>
+</html>
