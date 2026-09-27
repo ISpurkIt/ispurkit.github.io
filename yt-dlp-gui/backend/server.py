@@ -19,6 +19,7 @@ from . import options as opt
 from .manager import APP_DIR, Manager, extract_info, find_ffmpeg, impersonate_status, parse_args
 from .sites import error_hint, normalize_url, site_of, site_options
 from .storage import DEFAULT_OPTIONS, Storage
+from .window import webview_available, webview_packages
 
 WEB_DIR = APP_DIR / 'web'
 
@@ -28,8 +29,11 @@ class App:
         self.storage = storage or Storage()
         self.manager = Manager(self.storage)
         self.token = token or secrets.token_urlsafe(24)
-        self.update_state = {'running': False, 'output': '', 'ok': None}
+        self.update_state = {'running': False, 'output': '', 'ok': None, 'label': ''}
         self.restart_requested = threading.Event()
+        self.boot_id = secrets.token_hex(8)  # changes on every (re)start; the page uses it to detect restarts
+        self.ui_mode = 'browser'             # how this process is shown: 'window' or 'browser' (set by main.py)
+        self.ui_error = ''                   # why the window could not be opened, if it couldn't
 
     # --- helpers -----------------------------------------------------------
 
@@ -102,19 +106,40 @@ class App:
             raise RuntimeError('Системный диалог недоступен (нет tkinter). Введите путь вручную.')
         return result.stdout.decode('utf-8').strip()
 
-    def run_update(self):
-        self.update_state = {'running': True, 'output': '', 'ok': None}
+    def run_update(self, packages=None, label='yt-dlp', restart_after=False):
+        self.update_state = {'running': True, 'output': '', 'ok': None, 'label': label}
         self.manager.touch()
         # curl-cffi lets yt-dlp impersonate a browser, which TikTok and some other sites require
-        cmd = [sys.executable, '-m', 'pip', 'install', '-U', '--disable-pip-version-check', 'yt-dlp[default,curl-cffi]']
+        packages = packages or ['yt-dlp[default,curl-cffi]']
+        cmd = [sys.executable, '-m', 'pip', 'install', '-U', '--disable-pip-version-check', *packages]
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
             output = (result.stdout + '\n' + result.stderr).strip()
             ok = result.returncode == 0
         except Exception as e:
             output, ok = str(e), False
-        self.update_state = {'running': False, 'output': output[-4000:], 'ok': ok}
+        self.update_state = {'running': False, 'output': output[-4000:], 'ok': ok, 'label': label}
         self.manager.touch()
+        if ok and restart_after and not self.manager.running():
+            self.restart_requested.set()
+
+    def start_update(self, **kwargs):
+        if self.update_state['running']:
+            raise ValueError('Уже идёт установка — дождитесь её окончания')
+        threading.Thread(target=self.run_update, kwargs=kwargs, daemon=True).start()
+
+    def switch_ui(self, mode):
+        """Remembers the mode and restarts into it; installs pywebview first when needed."""
+        if mode not in ('window', 'browser'):
+            raise ValueError('Неизвестный режим')
+        if self.manager.running():
+            raise ValueError('Дождитесь окончания активных загрузок — для переключения нужен перезапуск')
+        self.storage.save_settings({'app': {'ui_mode': mode}})
+        if mode == 'window' and not webview_available():
+            self.start_update(packages=webview_packages(), label='pywebview', restart_after=True)
+            return {'installing': True}
+        self.restart_requested.set()
+        return {'installing': False}
 
     def state(self):
         settings = self.storage.load_settings()
@@ -130,6 +155,12 @@ class App:
             'history': self.storage.load_history(),
             'update': self.update_state,
             'config_dir': str(self.storage.root),
+            'boot_id': self.boot_id,
+            'window': {
+                'current': self.ui_mode,
+                'available': webview_available(),
+                'error': self.ui_error,
+            },
         }
 
     # --- API ---------------------------------------------------------------
@@ -235,8 +266,11 @@ class App:
 
         if method == 'POST' and route == 'update':
             if not self.update_state['running']:
-                threading.Thread(target=self.run_update, daemon=True).start()
+                self.start_update()
             return {'ok': True}
+
+        if method == 'POST' and route == 'ui/switch':
+            return self.switch_ui(body.get('mode'))
 
         if method == 'POST' and route == 'restart':
             if self.manager.running():

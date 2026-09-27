@@ -1,7 +1,8 @@
 """YT-DLP Studio — graphical interface for yt-dlp.
 
-    python main.py              open in a native window (pywebview) or the browser
-    python main.py --browser    always open in the default browser
+    python main.py              open the way chosen in the app's settings (window or browser)
+    python main.py --window     open in a separate window (pywebview) and remember the choice
+    python main.py --browser    open in the default browser and remember the choice
     python main.py --no-open    only start the server and print its address
 """
 
@@ -20,10 +21,14 @@ except ImportError:
     sys.exit('yt-dlp не установлен. Выполните:  python -m pip install -r requirements.txt')
 
 from backend.server import App, serve  # noqa: E402
+from backend.window import open_window, resolve_mode  # noqa: E402
+
+UI_FLAGS = ('--window', '--browser')
 
 
 def restart():
-    args = [sys.executable, os.path.abspath(__file__), *sys.argv[1:]]
+    # --window/--browser were already saved to the settings; dropping them lets an in-app switch win
+    args = [sys.executable, os.path.abspath(__file__), *(a for a in sys.argv[1:] if a not in UI_FLAGS)]
     if sys.platform == 'win32':
         subprocess.Popen(args)
         os._exit(0)
@@ -34,13 +39,19 @@ def main():
     parser = argparse.ArgumentParser(description='YT-DLP Studio')
     parser.add_argument('--port', type=int, default=int(os.environ.get('YTDLP_GUI_PORT', 0)),
                         help='порт (по умолчанию — любой свободный)')
-    parser.add_argument('--browser', action='store_true', help='открыть в браузере, а не в отдельном окне')
+    ui = parser.add_mutually_exclusive_group()
+    ui.add_argument('--window', action='store_true', help='открывать в отдельном окне (нужен pywebview)')
+    ui.add_argument('--browser', action='store_true', help='открывать во вкладке браузера')
     parser.add_argument('--no-open', action='store_true', help='ничего не открывать')
     args = parser.parse_args()
 
-    # after an in-app restart the browser tab reconnects by itself; a native window must be reopened
-    reopened = os.environ.get('YTDLP_GUI_RESTARTED') == 'browser'
     app = App(token=os.environ.get('YTDLP_GUI_TOKEN'))
+    if args.window or args.browser:
+        app.storage.save_settings({'app': {'ui_mode': 'window' if args.window else 'browser'}})
+    mode = resolve_mode(app.storage.load_settings()['app'].get('ui_mode'))
+    # How the previous process (before an in-app restart) was shown: a browser tab reconnects by itself
+    previous = os.environ.pop('YTDLP_GUI_RESTARTED', '')
+
     server = serve(app, port=args.port)
     port = server.server_address[1]
     url = f'http://127.0.0.1:{port}/'
@@ -48,34 +59,27 @@ def main():
     print(f'YT-DLP Studio запущен: {url}')
     print('Закройте это окно (или Ctrl+C), чтобы остановить приложение.')
 
-    ui = {'mode': 'browser'}
-
     def watch_restart():
         app.restart_requested.wait()
-        os.environ.update(YTDLP_GUI_TOKEN=app.token, YTDLP_GUI_PORT=str(port), YTDLP_GUI_RESTARTED=ui['mode'])
+        os.environ.update(YTDLP_GUI_TOKEN=app.token, YTDLP_GUI_PORT=str(port), YTDLP_GUI_RESTARTED=app.ui_mode)
         server.shutdown()
         server.server_close()
         restart()
 
     threading.Thread(target=watch_restart, daemon=True).start()
 
-    if not args.no_open and not args.browser and not reopened:
+    if not args.no_open and mode == 'window':
+        app.ui_mode = 'window'
         try:
-            import webview  # pywebview, optional
-        except ImportError:
-            webview = None
-        if webview:
-            try:
-                ui['mode'] = 'window'
-                webview.create_window('YT-DLP Studio', url, width=1360, height=880, min_size=(980, 640),
-                                      background_color='#0b0b14')
-                webview.start()
-                return
-            except Exception as e:  # no GUI backend available — fall back to the browser
-                ui['mode'] = 'browser'
-                print(f'Окно недоступно ({e}), открываю браузер…')
+            open_window(url, str(app.storage.root / 'webview'))
+            return  # the window was closed — quit
+        except Exception as e:  # pywebview missing or no GUI backend — fall back to the browser
+            app.ui_mode = 'browser'
+            app.ui_error = f'{e.__class__.__name__}: {e}'
+            print(f'Отдельное окно недоступно ({app.ui_error}), открываю браузер…')
 
-    if not args.no_open and not reopened:
+    app.ui_mode = 'browser'
+    if not args.no_open and previous != 'browser':
         webbrowser.open(url)
     try:
         threading.Event().wait()

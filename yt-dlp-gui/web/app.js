@@ -972,6 +972,7 @@ function renderEnv(st) {
   pill.title = st.ffmpeg ? `ffmpeg: ${st.ffmpeg}` : 'ffmpeg не найден — нажмите, чтобы узнать, как установить';
   $('#ffmpeg-help').hidden = !!st.ffmpeg;
   renderImpersonation();
+  renderWindow();
   renderUpdate(st.update);
 }
 
@@ -1023,11 +1024,19 @@ function renderUpdate(u) {
   const log = $('#update-log');
   log.hidden = !u.output;
   log.textContent = u.output || '';
+  const isWebview = u.label === 'pywebview';
+  btn.querySelector('span').textContent = u.running ? (isWebview ? 'Установка pywebview…' : 'Обновление…') : 'Обновить yt-dlp';
   if (updateWasRunning && !u.running) {
-    if (u.ok) toast('yt-dlp обновлён', { sub: 'Перезапустите приложение, чтобы применить', timeout: 12000, action: { label: 'Перезапустить', run: restartApp } });
+    if (isWebview) {
+      if (u.ok) toast('pywebview установлен', { sub: 'Перезапускаю приложение в отдельном окне…', type: 'info' });
+      else {
+        S.waitingRestart = false;
+        toast('Не удалось установить pywebview', { type: 'error', timeout: 12000, sub: 'Приложение останется во вкладке браузера. Подробности — в Настройках → yt-dlp.' });
+      }
+    } else if (u.ok) toast('yt-dlp обновлён', { sub: 'Перезапустите приложение, чтобы применить', timeout: 12000, action: { label: 'Перезапустить', run: restartApp } });
     else toast('Не удалось обновить yt-dlp', { type: 'error', sub: 'Подробности — в настройках' });
   }
-  if (!u.running && updateWasRunning && u.ok) S.env.impersonate = { ...S.env.impersonate, state: S.env.impersonate?.state === 'ok' ? 'ok' : 'restart' };
+  if (!u.running && updateWasRunning && u.ok && !isWebview) S.env.impersonate = { ...S.env.impersonate, state: S.env.impersonate?.state === 'ok' ? 'ok' : 'restart' };
   updateWasRunning = !!u.running;
   S.env.update = u;
   renderImpersonation();
@@ -1038,11 +1047,75 @@ async function restartApp() {
     await api('restart', {});
   } catch (e) { toastError(e); return; }
   toast('Перезапуск…', { type: 'info', timeout: 15000 });
-  const started = Date.now();
-  const wait = async () => {
-    try { await api('state'); location.reload(); } catch { if (Date.now() - started < 30000) setTimeout(wait, 700); }
+  waitForRestart();
+}
+
+/* Polls until a new server process answers (its boot_id differs), then reloads or hands over to the window. */
+function waitForRestart({ timeout = 30000 } = {}) {
+  const oldBoot = S.env.boot_id;
+  let deadline = Date.now() + timeout;
+  S.waitingRestart = true;
+  const tick = async () => {
+    if (!S.waitingRestart) return;
+    try {
+      const st = await api('state');
+      if (st.boot_id !== oldBoot) {
+        S.waitingRestart = false;
+        if (st.window.current === 'window' && S.env.window.current !== 'window') showMovedToWindow();
+        else location.reload();
+        return;
+      }
+      if (st.update.running) deadline = Date.now() + timeout;  // pip may take a while
+    } catch { /* server is restarting */ }
+    if (Date.now() < deadline) setTimeout(tick, 800);
+    else { S.waitingRestart = false; toast('Приложение не перезапустилось', { type: 'error', sub: 'Запустите его заново через run.bat' }); }
   };
-  setTimeout(wait, 1200);
+  setTimeout(tick, 800);
+}
+
+function showMovedToWindow() {
+  const el = document.createElement('div');
+  el.className = 'moved';
+  el.innerHTML = `<div><div class="empty-art"><svg><use href="#i-window"/></svg></div>
+    <b>YT-DLP Studio открыт в отдельном окне</b>
+    <p>Эту вкладку можно закрыть — загрузки и история доступны в окне приложения.</p>
+    <button class="btn ghost">${icon('x')}<span>Остаться во вкладке</span></button></div>`;
+  $('button', el).onclick = () => location.reload();
+  document.body.append(el);
+  try { window.close(); } catch { /* tabs not opened by script can't be closed */ }
+}
+
+async function switchUi(mode) {
+  if (S.waitingRestart) return;
+  try {
+    const r = await api('ui/switch', { mode });
+    if (r.installing) {
+      toast('Устанавливаю pywebview…', { type: 'info', timeout: 10000, sub: 'Это займёт около минуты, затем приложение само откроется в отдельном окне.' });
+    } else {
+      toast(mode === 'window' ? 'Открываю в отдельном окне…' : 'Открываю в браузере…', { type: 'info' });
+    }
+    S.app.ui_mode = mode;
+    applyApp();
+    waitForRestart({ timeout: r.installing ? 60000 : 30000 });
+  } catch (e) { toastError(e); }
+}
+
+function renderWindow() {
+  const w = S.env.window || { current: 'browser', available: false };
+  const target = w.current === 'window' ? 'browser' : 'window';
+  $('#kv-ui-now').textContent = w.current === 'window' ? 'в отдельном окне' : 'во вкладке браузера';
+  $('#kv-webview').textContent = w.available ? 'установлен' : 'не установлен';
+  $$('[data-ui-switch]').forEach((b) => {
+    b.dataset.uiSwitch = target;
+    const label = target === 'window' ? 'Открыть в отдельном окне' : 'Открыть в браузере';
+    b.title = label + (target === 'window' && !w.available ? ' (будет установлен pywebview)' : '');
+    $('use', b).setAttribute('href', target === 'window' ? '#i-window' : '#i-globe');
+    const span = $('span', b);
+    if (span) span.textContent = label;
+  });
+  const err = $('#ui-error');
+  err.hidden = !w.error;
+  if (w.error) err.innerHTML = `${icon('alert')}<div><b>Отдельное окно не открылось</b>, поэтому приложение запущено в браузере.<br><span class="mono small">${esc(w.error)}</span></div>`;
 }
 
 /* ================= events stream ================= */
@@ -1112,6 +1185,8 @@ function bindUI() {
     if (g) showPage(g.dataset.goto);
     if (e.target.closest('[data-install-imp]')) installImpersonation();
     if (e.target.closest('[data-restart]')) restartApp();
+    const sw = e.target.closest('[data-ui-switch]');
+    if (sw) switchUi(sw.dataset.uiSwitch);
   });
 
   const url = $('#url');

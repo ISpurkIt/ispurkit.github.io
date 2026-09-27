@@ -102,6 +102,7 @@ DEFAULT_APP = {
     'accent': 'sunset',
     'notify': True,
     'clipboard_watch': False,
+    'ui_mode': 'auto',            # auto | window | browser — how main.py opens the interface
 }
 
 

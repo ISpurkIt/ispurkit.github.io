@@ -1,4 +1,4 @@
 # curl-cffi: browser impersonation, required by TikTok and some other sites
 yt-dlp[default,curl-cffi]>=2024.1.1
 # Optional: open the app in its own window instead of a browser tab
-# pywebview>=5.0
+# pywebview>=5.0   (run.bat / run.sh install it when the window mode is chosen)
