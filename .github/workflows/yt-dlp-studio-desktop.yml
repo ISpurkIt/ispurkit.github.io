@@ -50,6 +50,38 @@ jobs:
             exit 1
           }
 
+      - name: Launch the app window (end-to-end)
+        run: |
+          $inst = "$env:APPDATA\yt-dlp-gui\instance.json"
+          Remove-Item $inst -ErrorAction SilentlyContinue
+          $app = Start-Process -FilePath 'dist\YT-DLP Studio\YT-DLP Studio.exe' -PassThru
+          for ($i = 0; $i -lt 60 -and -not (Test-Path $inst); $i++) { Start-Sleep 1 }
+          if (-not (Test-Path $inst)) { Get-Content "$env:APPDATA\yt-dlp-gui\logs\app.log"; throw 'the app did not start' }
+          $info = Get-Content $inst | ConvertFrom-Json
+          # the interface is loaded and its script is running once WebView2 holds a connection to the app
+          $connected = $false
+          for ($i = 0; $i -lt 90 -and -not $connected; $i++) {
+            Start-Sleep 1
+            $connected = [bool](Get-NetTCPConnection -RemotePort $info.port -State Established -ErrorAction SilentlyContinue |
+              Where-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).ProcessName -like 'msedgewebview2*' })
+          }
+          Write-Host "WebView2 connected: $connected"
+          Start-Sleep 3
+          try {
+            Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+            $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+            [System.Drawing.Graphics]::FromImage($bitmap).CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+            $bitmap.Save("$PWD\dist\screenshot.png")
+          } catch { Write-Host "screenshot failed: $_" }
+          Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$($info.port)/api/desktop/quit" `
+            -Headers @{ 'X-Token' = $info.token } -ContentType 'application/json' -Body '{}' | Out-Null
+          $exited = $app.WaitForExit(30000)
+          Write-Host "Exited after quit: $exited"
+          Get-Content "$env:APPDATA\yt-dlp-gui\logs\app.log" | Select-Object -Last 15
+          if (-not $connected) { throw 'the window did not load the interface' }
+          if (-not $exited) { throw 'the app did not exit' }
+
       - name: Build the installer
         run: |
           $version = python -c "from backend.version import APP_VERSION; print(APP_VERSION)"
@@ -64,11 +96,29 @@ jobs:
       - name: Portable archive
         run: Compress-Archive -Path 'dist\YT-DLP Studio' -DestinationPath "dist\YT-DLP-Studio-$env:APP_VERSION-portable.zip"
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
         with:
-          name: YT-DLP-Studio-${{ env.APP_VERSION }}-windows
-          path: |
-            yt-dlp-gui/dist/YT-DLP-Studio-Setup-*.exe
-            yt-dlp-gui/dist/YT-DLP-Studio-*-portable.zip
+          name: YT-DLP-Studio-${{ env.APP_VERSION }}-Setup
+          path: yt-dlp-gui/dist/YT-DLP-Studio-Setup-*.exe
           if-no-files-found: error
+          compression-level: 0        # already compressed by Inno Setup
           retention-days: 90
+
+      - name: Upload the portable version
+        uses: actions/upload-artifact@v4
+        with:
+          name: YT-DLP-Studio-${{ env.APP_VERSION }}-portable
+          path: yt-dlp-gui/dist/YT-DLP-Studio-*-portable.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 90
+
+      - name: Upload the screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot
+          path: yt-dlp-gui/dist/screenshot.png
+          if-no-files-found: ignore
+          retention-days: 14

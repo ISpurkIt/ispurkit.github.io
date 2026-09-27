@@ -29,9 +29,9 @@
 ### Где взять сборку
 
 Сборку делает GitHub Actions (workflow «YT-DLP Studio desktop (Windows)») при каждом изменении в этой
-ветке: вкладка **Actions** → последний запуск → раздел **Artifacts** → `YT-DLP-Studio-<версия>-windows`.
-Внутри — установщик и portable-архив. Перед сборкой workflow прогоняет тесты, а после — самопроверку
-готового `.exe` (yt-dlp, ffmpeg, deno, curl_cffi, окно).
+ветке: вкладка **Actions** → последний запуск → раздел **Artifacts**: `YT-DLP-Studio-<версия>-Setup`
+(установщик) или `YT-DLP-Studio-<версия>-portable`. Перед сборкой workflow прогоняет тесты, а после —
+проверяет готовый `.exe`: самопроверку (yt-dlp, ffmpeg, deno, curl_cffi) и настоящий запуск окна с выходом.
 
 Собрать самостоятельно на Windows: `desktop\build.bat` (нужен Python 3.10+; для установщика —
 [Inno Setup 6](https://jrsoftware.org/isdl.php)). Результат появится в папке `dist`.
