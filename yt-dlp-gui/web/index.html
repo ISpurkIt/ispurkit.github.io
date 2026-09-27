@@ -510,7 +510,9 @@
 
         <div class="card pad">
           <h3><svg class="ic"><use href="#i-up"/></svg>yt-dlp</h3>
+          <div class="kv desktop-only"><span>Версия приложения</span><b id="kv-app" class="mono"></b></div>
           <div class="kv"><span>Версия yt-dlp</span><b id="kv-ytdlp" class="mono"></b></div>
+          <div class="kv"><span>deno (JavaScript для YouTube)</span><b id="kv-deno" class="mono"></b></div>
           <div class="kv"><span>Python</span><b id="kv-python" class="mono"></b></div>
           <div class="kv"><span>ffmpeg</span><b id="kv-ffmpeg" class="mono"></b></div>
           <div class="kv"><span>Имитация браузера (curl_cffi)</span><b id="kv-imp" class="mono"></b></div>
@@ -525,11 +527,14 @@
           <div class="btn-row">
             <button class="btn primary" id="btn-update"><svg class="ic"><use href="#i-up"/></svg><span>Обновить yt-dlp</span></button>
             <button class="btn ghost" id="btn-restart"><svg class="ic"><use href="#i-retry"/></svg><span>Перезапустить</span></button>
+            <button class="btn ghost desktop-only" id="btn-logs"><svg class="ic"><use href="#i-terminal"/></svg><span>Журнал приложения</span></button>
+            <button class="btn ghost desktop-only" id="btn-reset-ytdlp" hidden title="Удалить скачанное обновление и вернуться к версии, встроенной в приложение"><svg class="ic"><use href="#i-retry"/></svg><span>Встроенный yt-dlp</span></button>
+            <button class="btn ghost danger desktop-only" id="btn-quit" hidden><svg class="ic"><use href="#i-x"/></svg><span>Выход</span></button>
           </div>
           <pre class="update-log" id="update-log" hidden></pre>
         </div>
 
-        <div class="card pad">
+        <div class="card pad" id="card-window">
           <h3><svg class="ic"><use href="#i-window"/></svg>Окно приложения</h3>
           <div class="kv"><span>Сейчас открыто</span><b id="kv-ui-now"></b></div>
           <div class="kv"><span>pywebview (отдельное окно)</span><b id="kv-webview" class="mono"></b></div>

@@ -1,5 +1,9 @@
 .venv/
+.venv-build/
 __pycache__/
 *.pyc
 bin/*
 !bin/README.txt
+desktop/bin/
+build/
+dist/

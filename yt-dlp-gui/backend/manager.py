@@ -73,11 +73,29 @@ def impersonate_status():
     return {'state': 'ok', 'version': version, 'error': ''}
 
 
+def find_deno():
+    """deno is the JavaScript runtime yt-dlp needs to unlock all YouTube formats."""
+    exe = 'deno.exe' if sys.platform == 'win32' else 'deno'
+    local = APP_DIR / 'bin' / exe
+    if local.is_file():
+        return str(local)
+    return shutil.which('deno')
+
+
 def ffmpeg_args():
     path = find_ffmpeg()
     if path and Path(path).parent == APP_DIR / 'bin':
         return ['--ffmpeg-location', path]
     return []
+
+
+def tool_args():
+    """Points yt-dlp at the tools shipped in ./bin (the desktop build bundles ffmpeg and deno)."""
+    args = ffmpeg_args()
+    deno = find_deno()
+    if deno and Path(deno).parent == APP_DIR / 'bin':
+        args += ['--js-runtimes', f'deno:{deno}']
+    return args
 
 
 def parse_args(args):
@@ -257,7 +275,7 @@ class Task:
         self.progress = 0.0
         self.add_log(f'$ {opt.to_command(self.args, [self.url])}', level='cmd')
         try:
-            parsed = parse_args([*self.args, *ffmpeg_args(), self.url])
+            parsed = parse_args([*self.args, *tool_args(), self.url])
             params = dict(parsed.ydl_opts)
             params.update({
                 'logger': TaskLogger(self),
@@ -387,17 +405,27 @@ class Manager:
     def _scheduler(self):
         while True:
             time.sleep(0.3)
-            with self.lock:
-                free = int(self.max_concurrent) - len(self.running())
-                if free <= 0:
-                    continue
-                queued = sorted((t for t in self.tasks.values() if t.status == 'queued'),
-                                key=lambda t: t.created)
-                for task in queued[:free]:
-                    task.status = 'starting'
-                    threading.Thread(target=task.run, daemon=True, name=f'task-{task.id}').start()
-            if queued[:free]:
+            if self._start_queued():
                 self.touch()
+
+    def _start_queued(self):
+        with self.lock:
+            running = self.running()
+            free = int(self.max_concurrent) - len(running)
+            # Two tasks for the same URL (say, the video and its MP3) would write the same
+            # intermediate files at the same time and break each other, so they run one after another.
+            busy = {t.url for t in running}
+            started = []
+            for task in sorted((t for t in self.tasks.values() if t.status == 'queued'), key=lambda t: t.created):
+                if len(started) >= free:
+                    break
+                if task.url in busy:
+                    continue
+                busy.add(task.url)
+                task.status = 'starting'
+                threading.Thread(target=task.run, daemon=True, name=f'task-{task.id}').start()
+                started.append(task)
+            return started
 
     def on_task_finished(self, task):
         if task.status in {'done', 'error'}:
@@ -579,7 +607,7 @@ def summarize(info):
 
 
 def extract_info(url, options):
-    parsed = parse_args([*opt.info_args(options), url])
+    parsed = parse_args([*opt.info_args(options), *tool_args(), url])
     params = dict(parsed.ydl_opts)
     params.update({
         'quiet': True,

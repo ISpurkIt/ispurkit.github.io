@@ -103,6 +103,7 @@ DEFAULT_APP = {
     'notify': True,
     'clipboard_watch': False,
     'ui_mode': 'auto',            # auto | window | browser — how main.py opens the interface
+    'window_geometry': None,      # desktop app: last window size/position {width, height, x, y}
 }
 
 

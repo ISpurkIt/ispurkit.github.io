@@ -146,13 +146,38 @@ class ServerTest(unittest.TestCase):
         self.assertEqual(ctx.exception.code, 403)
 
     def test_playlist_entry_split_keeps_folder(self):
-        args = self.app.item_args(make(output_dir='/dl'), {
+        base = tempfile.gettempdir()
+        args = self.app.item_args(make(output_dir=base), {
             'url': 'u', 'playlist_title': 'My: List', 'playlist_index': 7, 'playlist_count': 120})
         self.assertIn('--no-playlist', args)
         out_dir = args[args.index('-P') + 1]
-        self.assertTrue(out_dir.startswith('/dl'))
+        self.assertTrue(out_dir.startswith(base))
         self.assertIn('List', out_dir)
         self.assertTrue(args[args.index('-o') + 1].startswith('007 - '))
+
+
+class SchedulerTest(unittest.TestCase):
+    def test_same_url_never_runs_twice_at_once(self):
+        from unittest import mock
+        from backend.manager import Manager, Task
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(Task, 'run'), \
+                mock.patch('backend.manager.threading.Thread') as thread:
+            manager = Manager.__new__(Manager)  # no background scheduler thread
+            manager.storage = Storage(Path(tmp))
+            manager.tasks = {}
+            manager.lock = threading.RLock()
+            manager.changed = threading.Condition()
+            manager.max_concurrent = 4
+            manager.touch = lambda throttle=False: None
+            video = manager.add('https://x/1', ['-f', 'b'])
+            audio = manager.add('https://x/1', ['-x'])
+            other = manager.add('https://x/2', ['-f', 'b'])
+            started = manager._start_queued()
+            self.assertEqual({t.id for t in started}, {video.id, other.id})
+            self.assertEqual(audio.status, 'queued')
+            self.assertEqual(thread.call_count, 2)
+            video.status = 'done'
+            self.assertEqual([t.id for t in manager._start_queued()], [audio.id])
 
 
 if __name__ == '__main__':

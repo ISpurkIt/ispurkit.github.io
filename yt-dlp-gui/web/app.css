@@ -617,3 +617,9 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 
 .moved b { font-size: 20px; }
 .moved p { margin: 0 0 6px; color: var(--text-2); }
 @media (max-width: 1100px) { .side-btns { flex-direction: column; } }
+
+/* ================= DESKTOP APP ================= */
+.desktop-only { display: none; }
+body.desktop .desktop-only:not([hidden]) { display: flex; }
+body.desktop .btn.desktop-only:not([hidden]) { display: inline-flex; }
+body.desktop [data-ui-switch], body.desktop #card-window { display: none !important; }

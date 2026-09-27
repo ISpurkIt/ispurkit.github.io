@@ -16,7 +16,9 @@ import yt_dlp
 from yt_dlp.utils import sanitize_filename
 
 from . import options as opt
-from .manager import APP_DIR, Manager, extract_info, find_ffmpeg, impersonate_status, parse_args
+from . import runtime
+from .manager import APP_DIR, Manager, extract_info, find_deno, find_ffmpeg, impersonate_status, parse_args
+from .proc import NO_WINDOW
 from .sites import error_hint, normalize_url, site_of, site_options
 from .storage import DEFAULT_OPTIONS, Storage
 from .window import webview_available, webview_packages
@@ -34,6 +36,7 @@ class App:
         self.boot_id = secrets.token_hex(8)  # changes on every (re)start; the page uses it to detect restarts
         self.ui_mode = 'browser'             # how this process is shown: 'window' or 'browser' (set by main.py)
         self.ui_error = ''                   # why the window could not be opened, if it couldn't
+        self.desktop = None                  # desktop.DesktopHost when running as the desktop app
 
     # --- helpers -----------------------------------------------------------
 
@@ -93,6 +96,8 @@ class App:
     def pick(self, kind, initial):
         """Native file/folder dialog via tkinter in a child process (keeps GUI toolkits off our threads)."""
         initial = os.path.expanduser(initial or '') or str(Path.home())
+        if self.desktop and self.desktop.has_window():
+            return self.desktop.pick(kind, initial)
         if kind == 'file':
             call = 'fd.askopenfilename(initialdir=%r, title="Выберите файл")' % initial
         else:
@@ -101,7 +106,7 @@ class App:
                 'r = tk.Tk(); r.withdraw(); r.attributes("-topmost", True)\n'
                 f'p = {call}\n'
                 'import sys; sys.stdout.buffer.write((p or "").encode("utf-8"))')
-        result = subprocess.run([sys.executable, '-c', code], capture_output=True, timeout=600)
+        result = subprocess.run([sys.executable, '-c', code], capture_output=True, timeout=600, **NO_WINDOW)
         if result.returncode != 0:
             raise RuntimeError('Системный диалог недоступен (нет tkinter). Введите путь вручную.')
         return result.stdout.decode('utf-8').strip()
@@ -109,11 +114,13 @@ class App:
     def run_update(self, packages=None, label='yt-dlp', restart_after=False):
         self.update_state = {'running': True, 'output': '', 'ok': None, 'label': label}
         self.manager.touch()
+        if self.desktop and self.desktop.frozen:
+            return self.run_runtime_update()
         # curl-cffi lets yt-dlp impersonate a browser, which TikTok and some other sites require
         packages = packages or ['yt-dlp[default,curl-cffi]']
         cmd = [sys.executable, '-m', 'pip', 'install', '-U', '--disable-pip-version-check', *packages]
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=600, **NO_WINDOW)
             output = (result.stdout + '\n' + result.stderr).strip()
             ok = result.returncode == 0
         except Exception as e:
@@ -122,6 +129,26 @@ class App:
         self.manager.touch()
         if ok and restart_after and not self.manager.running():
             self.restart_requested.set()
+
+    def run_runtime_update(self):
+        """The packaged app has no pip: fetch the new yt-dlp from PyPI into the user's folder."""
+        lines = []
+
+        def say(line):
+            lines.append(line)
+            self.update_state = {**self.update_state, 'output': '\n'.join(lines)}
+            self.manager.touch()
+
+        try:
+            changed, _ = runtime.update(self.storage.root, yt_dlp.version.__version__, say=say)
+            ok = True
+        except Exception as e:
+            say(f'Ошибка: {e}')
+            changed, ok = False, False
+        # "ok" drives the "restart to apply" prompt, so report it only when there is something to apply
+        self.update_state = {'running': False, 'output': '\n'.join(lines), 'ok': ok if changed or not ok else None,
+                             'label': 'yt-dlp', 'up_to_date': ok and not changed}
+        self.manager.touch()
 
     def start_update(self, **kwargs):
         if self.update_state['running']:
@@ -156,6 +183,8 @@ class App:
             'update': self.update_state,
             'config_dir': str(self.storage.root),
             'boot_id': self.boot_id,
+            'deno': find_deno(),
+            'desktop': self.desktop.describe() if self.desktop else None,
             'window': {
                 'current': self.ui_mode,
                 'available': webview_available(),
@@ -172,9 +201,14 @@ class App:
         if method == 'GET' and route == 'state':
             return self.state()
 
+        if method == 'GET' and route == 'ping':
+            return {'ok': True, 'boot_id': self.boot_id}
+
         if method == 'POST' and route == 'settings':
             saved = self.storage.save_settings(body)
             self.manager.set_max_concurrent(saved['app']['max_concurrent'])
+            if self.desktop and 'theme' in (body.get('app') or {}):
+                self.desktop.apply_theme(saved['app']['theme'])
             self.manager.touch()
             return saved
 
@@ -271,6 +305,22 @@ class App:
 
         if method == 'POST' and route == 'ui/switch':
             return self.switch_ui(body.get('mode'))
+
+        if route.startswith('desktop/') and method == 'POST':
+            if not self.desktop:
+                raise LookupError('Доступно только в desktop-версии')
+            action = route.split('/', 1)[1]
+            if action == 'show':       # a second launch asks the running copy to come to the front
+                self.desktop.show()
+            elif action == 'quit':
+                self.desktop.quit()
+            elif action == 'open-logs':
+                self.desktop.open_logs()
+            elif action == 'reset-yt-dlp':
+                runtime.reset(self.storage.root)
+            else:
+                raise LookupError('Неизвестный запрос')
+            return {'ok': True}
 
         if method == 'POST' and route == 'restart':
             if self.manager.running():

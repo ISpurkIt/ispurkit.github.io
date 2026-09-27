@@ -1,0 +1,74 @@
+name: YT-DLP Studio desktop (Windows)
+
+on:
+  push:
+    branches: [claude/desktop-app]
+    paths: ['yt-dlp-gui/**', '.github/workflows/yt-dlp-studio-desktop.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: yt-dlp-gui
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: yt-dlp-gui/desktop/requirements-desktop.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -U pip
+          python -m pip install --disable-pip-version-check -r desktop/requirements-desktop.txt
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Download ffmpeg and deno
+        run: ./desktop/fetch-tools.ps1
+
+      - name: Build with PyInstaller
+        run: python -m PyInstaller desktop/yt-dlp-studio.spec --noconfirm --clean --distpath dist --workpath build
+
+      - name: Self-test the built app
+        run: |
+          $report = Join-Path $PWD 'dist\self-test.json'
+          $p = Start-Process -FilePath 'dist\YT-DLP Studio\YT-DLP Studio.exe' -ArgumentList '--self-test', "`"$report`"" -Wait -PassThru
+          if (Test-Path $report) { Get-Content $report } else { Write-Host 'no report written' }
+          if ($p.ExitCode -ne 0) {
+            Get-Content "$env:APPDATA\yt-dlp-gui\logs\app.log" -ErrorAction SilentlyContinue
+            exit 1
+          }
+
+      - name: Build the installer
+        run: |
+          $version = python -c "from backend.version import APP_VERSION; print(APP_VERSION)"
+          "APP_VERSION=$version" >> $env:GITHUB_ENV
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup --no-progress -y
+          }
+          & $iscc "/DAppVersion=$version" desktop\installer.iss
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Portable archive
+        run: Compress-Archive -Path 'dist\YT-DLP Studio' -DestinationPath "dist\YT-DLP-Studio-$env:APP_VERSION-portable.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: YT-DLP-Studio-${{ env.APP_VERSION }}-windows
+          path: |
+            yt-dlp-gui/dist/YT-DLP-Studio-Setup-*.exe
+            yt-dlp-gui/dist/YT-DLP-Studio-*-portable.zip
+          if-no-files-found: error
+          retention-days: 90

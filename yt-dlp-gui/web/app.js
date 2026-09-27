@@ -965,6 +965,14 @@ function renderEnv(st) {
   $('#kv-ytdlp').textContent = st.version;
   $('#kv-python').textContent = st.python;
   $('#kv-ffmpeg').textContent = st.ffmpeg || 'не найден';
+  $('#kv-deno').textContent = st.deno || 'не найден — часть форматов YouTube может быть недоступна';
+  const desktop = st.desktop;
+  document.body.classList.toggle('desktop', !!desktop);
+  if (desktop) {
+    $('#kv-app').textContent = `${desktop.version}${desktop.frozen ? '' : ' (из исходников)'}`;
+    $('#btn-reset-ytdlp').hidden = !desktop.yt_dlp_updated;
+    $('#btn-quit').hidden = desktop.window;  // only when the app fell back to a browser tab
+  }
   $('#kv-config').textContent = st.config_dir;
   const pill = $('#ffmpeg-pill');
   pill.classList.toggle('ok', !!st.ffmpeg);
@@ -1026,7 +1034,9 @@ function renderUpdate(u) {
   log.textContent = u.output || '';
   const isWebview = u.label === 'pywebview';
   btn.querySelector('span').textContent = u.running ? (isWebview ? 'Установка pywebview…' : 'Обновление…') : 'Обновить yt-dlp';
-  if (updateWasRunning && !u.running) {
+  if (updateWasRunning && !u.running && u.up_to_date) {
+    toast('У вас последняя версия yt-dlp', { type: 'info' });
+  } else if (updateWasRunning && !u.running) {
     if (isWebview) {
       if (u.ok) toast('pywebview установлен', { sub: 'Перезапускаю приложение в отдельном окне…', type: 'info' });
       else {
@@ -1275,6 +1285,16 @@ function bindUI() {
   $('#ffmpeg-pill').addEventListener('click', () => { if (!S.env.ffmpeg) showPage('settings'); });
   $('#btn-update').addEventListener('click', () => api('update', {}).catch(toastError));
   $('#btn-restart').addEventListener('click', restartApp);
+  $('#btn-logs').addEventListener('click', () => api('desktop/open-logs', {}).catch(toastError));
+  $('#btn-reset-ytdlp').addEventListener('click', async () => {
+    if (!confirm('Вернуться к версии yt-dlp, встроенной в приложение? Понадобится перезапуск.')) return;
+    try { await api('desktop/reset-yt-dlp', {}); restartApp(); } catch (e) { toastError(e); }
+  });
+  $('#btn-quit').addEventListener('click', async () => {
+    if (!confirm('Завершить YT-DLP Studio? Незаконченные загрузки будут остановлены.')) return;
+    try { await api('desktop/quit', {}); } catch { /* the server is gone — expected */ }
+    document.body.innerHTML = '<div class="empty" style="height:100vh;justify-content:center"><b>YT-DLP Studio завершён</b><p>Эту вкладку можно закрыть.</p></div>';
+  });
   $('#btn-reset-opts').addEventListener('click', async () => {
     if (!confirm('Вернуть все параметры загрузки к значениям по умолчанию?')) return;
     try {
