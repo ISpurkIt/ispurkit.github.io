@@ -60,7 +60,7 @@ class OptionsTest(unittest.TestCase):
         args = opt.build_args(make(playlist_subfolder=True, playlist_numbering=True))
         tpl = args[args.index('-o') + 1]
         self.assertTrue(tpl.startswith('%(playlist_title&{}/|)s%(playlist_index&{} - |)s'))
-        args = opt.build_args(make(no_playlist=True))
+        args = opt.build_args(make(no_playlist=True, title_limit=''))
         self.assertEqual(args[args.index('-o') + 1], DEFAULT_OPTIONS['filename_template'])
 
     def test_extra_args_and_errors(self):

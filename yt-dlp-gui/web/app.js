@@ -21,7 +21,11 @@ async function api(path, body) {
   });
   let data = {};
   try { data = await res.json(); } catch { /* empty */ }
-  if (!res.ok) throw new Error(data.error || `Ошибка ${res.status}`);
+  if (!res.ok) {
+    const err = new Error(data.error || `Ошибка ${res.status}`);
+    err.hint = data.hint || '';
+    throw err;
+  }
   return data;
 }
 
@@ -60,6 +64,7 @@ function fmtDate(d) {
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 const basename = (p) => String(p || '').split(/[\\/]/).pop();
+const isTikTok = (u) => { try { return /(^|\.)tiktokv?\.com$/i.test(new URL(String(u).trim()).hostname); } catch { return false; } };
 
 /* ================= state ================= */
 const S = {
@@ -302,11 +307,12 @@ function syncSummaries() {
       : `${o.sponsorblock === 'remove' ? 'вырезать' : 'отметить'}: ${(o.sponsorblock_categories || []).length} ${plural((o.sponsorblock_categories || []).length, ['категория', 'категории', 'категорий'])}`,
     range: range.length ? range.join(' · ') : 'всё целиком',
     net: net.length ? net.join(' · ') : 'по умолчанию',
+    tiktok: `${{ ok: 'готов', missing: 'нужен curl_cffi', restart: 'нужен перезапуск', unsupported: 'нужно обновить curl_cffi' }[S.env.impersonate?.state] || ''}${o.tiktok_h264 ? ' · H.264' : ''}`,
     pro: [o.extra_args && o.extra_args.trim() && 'свои аргументы', o.use_config && 'конфиг yt-dlp'].filter(Boolean).join(' · ') || 'не заданы',
   };
   const on = {
     output: o.use_archive || o.restrict_filenames, subs: o.subtitles, post: post.length > 0, sponsor: o.sponsorblock !== 'off',
-    range: range.length > 0, net: net.length > 0, pro: !!(String(o.extra_args || '').trim() || o.use_config),
+    range: range.length > 0, net: net.length > 0, tiktok: S.env.impersonate?.state === 'ok', pro: !!(String(o.extra_args || '').trim() || o.use_config),
   };
   $$('[data-sum]').forEach((el) => {
     el.textContent = sums[el.dataset.sum] || '';
@@ -376,7 +382,11 @@ async function analyze() {
     if (seq !== analyzeSeq) return;
     pv.hidden = true;
     S.info = null;
-    toast('Не удалось получить информацию', { type: 'error', sub: e.message, timeout: 9000 });
+    const needImp = isTikTok(url) && S.env.impersonate?.state !== 'ok';
+    toast('Не удалось получить информацию', {
+      type: 'error', sub: [e.message, e.hint].filter(Boolean).join('\n\n'), timeout: 12000,
+      action: needImp ? { label: 'Установить curl_cffi', run: installImpersonation } : null,
+    });
   } finally {
     if (seq === analyzeSeq) btn.classList.remove('loading');
   }
@@ -475,6 +485,8 @@ function renderPreview() {
         </div>
       </div>
     </div>
+    ${info.site === 'tiktok' && !info.is_playlist && !(info.formats || []).some((f) => f.has_video)
+    ? `<p class="pv-note">${icon('info')}<span>Похоже, это фото-карусель: yt-dlp может скачать из неё только музыку и обложку. Выберите режим «Только аудио».</span></p>` : ''}
     <div class="tabs">${tabs.map(([id, name, n]) => `<button class="tab ${id === S.tab ? 'active' : ''}" data-tab="${id}">${name}${n != null ? `<span class="count">${n}</span>` : ''}</button>`).join('')}</div>
     <div class="tab-body">${renderTab()}</div>`;
 }
@@ -719,6 +731,7 @@ function createTaskEl(t) {
       <div class="bar"><div class="fill"></div></div>
       <div class="task-stats"></div>
       <div class="task-error" hidden></div>
+      <div class="task-hint" hidden></div>
     </div>
     <div class="task-actions"></div>`;
   const img = $('img', el);
@@ -757,6 +770,10 @@ function updateTaskEl(el, t) {
   const err = $('.task-error', el);
   err.hidden = !(t.status === 'error' && t.error);
   err.textContent = t.error || '';
+  const hint = $('.task-hint', el);
+  const hintHtml = t.status === 'error' && t.hint ? `${icon('info')}<span>${esc(t.hint)}</span>` : '';
+  hint.hidden = !hintHtml;
+  if (hint.innerHTML !== hintHtml) hint.innerHTML = hintHtml;
   const actions = $('.task-actions', el);
   const key = `${t.status}|${t.files.length}`;
   if (actions.dataset.key !== key) { actions.dataset.key = key; actions.innerHTML = taskActions(t); }
@@ -803,7 +820,11 @@ function handleTasks(tasks) {
     if (prev && prev !== t.status) {
       if (t.status === 'done') notifyDone(t);
       if (t.status === 'error') {
-        toast('Ошибка загрузки', { type: 'error', sub: `${t.title}: ${t.error || ''}`, timeout: 8000, action: { label: 'Журнал', run: () => openLog(t.id) } });
+        const impFix = isTikTok(t.url) && S.env.impersonate?.state !== 'ok';
+        toast('Ошибка загрузки', {
+          type: 'error', sub: `${t.title}: ${t.error || ''}`, timeout: 9000,
+          action: impFix ? { label: 'Установить curl_cffi', run: installImpersonation } : { label: 'Журнал', run: () => openLog(t.id) },
+        });
       }
     }
     S.prevStatus[t.id] = t.status;
@@ -950,7 +971,47 @@ function renderEnv(st) {
   pill.classList.toggle('bad', !st.ffmpeg);
   pill.title = st.ffmpeg ? `ffmpeg: ${st.ffmpeg}` : 'ffmpeg не найден — нажмите, чтобы узнать, как установить';
   $('#ffmpeg-help').hidden = !!st.ffmpeg;
+  renderImpersonation();
   renderUpdate(st.update);
+}
+
+function renderImpersonation() {
+  const imp = S.env.impersonate || { state: 'missing' };
+  $('#kv-imp').textContent = imp.state === 'ok' ? `есть (${imp.version})` : { missing: 'не установлена', restart: 'нужен перезапуск', unsupported: `версия ${imp.version} не поддерживается` }[imp.state];
+  const running = !!S.env.update?.running;
+  let html = '';
+  if (imp.state === 'ok') {
+    html = `${icon('check')}<div><b>TikTok готов к работе.</b> Имитация браузера включается автоматически, когда сайт её требует.</div>`;
+  } else if (imp.state === 'restart') {
+    html = `${icon('alert')}<div><b>curl_cffi установлен.</b> Перезапустите приложение, чтобы yt-dlp начал его использовать.</div>
+      <button class="btn primary small" data-restart>${icon('retry')}<span>Перезапустить</span></button>`;
+  } else {
+    html = `${icon('alert')}<div><b>Нет имитации браузера.</b> TikTok и некоторые другие сайты без неё блокируют загрузку.
+      Установка займёт около минуты${imp.state === 'unsupported' ? ` (текущая версия curl_cffi ${esc(imp.version)} не подходит — будет заменена)` : ''}.</div>
+      <button class="btn primary small ${running ? 'loading' : ''}" data-install-imp>${icon('download')}<span>${running ? 'Установка…' : 'Установить curl_cffi'}</span></button>`;
+  }
+  $$('[data-imp-status]').forEach((el) => {
+    el.className = `imp-status ${imp.state === 'ok' ? 'ok' : ''}`;
+    if (el.dataset.key !== html) { el.dataset.key = html; el.innerHTML = html; }
+  });
+  const banner = $('#tiktok-banner');
+  banner.hidden = imp.state === 'ok' || S.batch ? true : !isTikTok($('#url').value);
+  const bannerBtn = $('[data-install-imp]', banner);
+  bannerBtn?.classList.toggle('loading', running);
+  if (imp.state === 'restart' && bannerBtn) {
+    banner.querySelector('span').textContent = 'curl_cffi установлен — перезапустите приложение, чтобы TikTok заработал.';
+    bannerBtn.outerHTML = `<button class="btn primary small" data-restart>${icon('retry')}<span>Перезапустить</span></button>`;
+  }
+  syncSummaries();
+}
+
+async function installImpersonation() {
+  try {
+    await api('update', {});
+    S.env.update = { ...(S.env.update || {}), running: true };
+    renderImpersonation();
+    toast('Устанавливаю curl_cffi…', { type: 'info', sub: 'Это займёт около минуты. После установки приложение предложит перезапуск.' });
+  } catch (e) { toastError(e); }
 }
 
 let updateWasRunning = false;
@@ -966,7 +1027,10 @@ function renderUpdate(u) {
     if (u.ok) toast('yt-dlp обновлён', { sub: 'Перезапустите приложение, чтобы применить', timeout: 12000, action: { label: 'Перезапустить', run: restartApp } });
     else toast('Не удалось обновить yt-dlp', { type: 'error', sub: 'Подробности — в настройках' });
   }
+  if (!u.running && updateWasRunning && u.ok) S.env.impersonate = { ...S.env.impersonate, state: S.env.impersonate?.state === 'ok' ? 'ok' : 'restart' };
   updateWasRunning = !!u.running;
+  S.env.update = u;
+  renderImpersonation();
 }
 
 async function restartApp() {
@@ -1046,10 +1110,12 @@ function bindUI() {
   document.addEventListener('click', (e) => {
     const g = e.target.closest('[data-goto]');
     if (g) showPage(g.dataset.goto);
+    if (e.target.closest('[data-install-imp]')) installImpersonation();
+    if (e.target.closest('[data-restart]')) restartApp();
   });
 
   const url = $('#url');
-  url.addEventListener('input', () => { $('#btn-clear-url').hidden = !url.value; refreshCommand(); });
+  url.addEventListener('input', () => { $('#btn-clear-url').hidden = !url.value; refreshCommand(); renderImpersonation(); });
   url.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); download(); } else if (e.key === 'Enter') analyze();
   });

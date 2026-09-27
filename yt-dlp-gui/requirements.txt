@@ -1,3 +1,4 @@
-yt-dlp[default]>=2024.1.1
-# Необязательно: открывает приложение в отдельном окне, а не во вкладке браузера
+# curl-cffi: browser impersonation, required by TikTok and some other sites
+yt-dlp[default,curl-cffi]>=2024.1.1
+# Optional: open the app in its own window instead of a browser tab
 # pywebview>=5.0

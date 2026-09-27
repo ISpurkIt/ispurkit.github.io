@@ -16,7 +16,8 @@ import yt_dlp
 from yt_dlp.utils import sanitize_filename
 
 from . import options as opt
-from .manager import APP_DIR, Manager, extract_info, find_ffmpeg, parse_args
+from .manager import APP_DIR, Manager, extract_info, find_ffmpeg, impersonate_status, parse_args
+from .sites import error_hint, normalize_url, site_of, site_options
 from .storage import DEFAULT_OPTIONS, Storage
 
 WEB_DIR = APP_DIR / 'web'
@@ -38,7 +39,7 @@ class App:
 
     def item_args(self, options, item):
         """Per-item args; entries of a playlist split into separate tasks keep folder/numbering."""
-        options = dict(options)
+        options = dict(site_options(item.get('url') or '', options))
         playlist_title = item.get('playlist_title')
         if playlist_title:
             if options.get('playlist_subfolder'):
@@ -104,7 +105,8 @@ class App:
     def run_update(self):
         self.update_state = {'running': True, 'output': '', 'ok': None}
         self.manager.touch()
-        cmd = [sys.executable, '-m', 'pip', 'install', '-U', '--disable-pip-version-check', 'yt-dlp[default]']
+        # curl-cffi lets yt-dlp impersonate a browser, which TikTok and some other sites require
+        cmd = [sys.executable, '-m', 'pip', 'install', '-U', '--disable-pip-version-check', 'yt-dlp[default,curl-cffi]']
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
             output = (result.stdout + '\n' + result.stderr).strip()
@@ -121,6 +123,7 @@ class App:
             'python': sys.version.split()[0],
             'platform': sys.platform,
             'ffmpeg': find_ffmpeg(),
+            'impersonate': impersonate_status(),
             'settings': settings,
             'defaults': DEFAULT_OPTIONS,
             'tasks': self.manager.snapshot(),
@@ -150,8 +153,8 @@ class App:
 
         if method == 'POST' and route == 'command':
             options = self.options_from(body)
-            args = opt.build_args(options, self.storage.archive_file)
-            urls = [u for u in body.get('urls') or [] if u] or ['URL']
+            urls = [normalize_url(u) for u in body.get('urls') or [] if u] or ['URL']
+            args = opt.build_args(site_options(urls[0], options), self.storage.archive_file)
             error = None
             try:
                 parse_args([*args, 'https://example.com'])
@@ -163,7 +166,11 @@ class App:
             url = (body.get('url') or '').strip()
             if not url:
                 raise ValueError('Укажите ссылку')
-            return extract_info(url, self.options_from(body))
+            url = normalize_url(url)
+            info = extract_info(url, self.options_from(body))
+            info['site'] = site_of(url)
+            info['source_url'] = url
+            return info
 
         if method == 'POST' and route == 'download':
             options = self.options_from(body)
@@ -172,9 +179,10 @@ class App:
                 raise ValueError('Нет ссылок для загрузки')
             created = []
             for item in items:
-                url = (item.get('url') or '').strip()
+                url = normalize_url(item.get('url'))
                 if not url:
                     continue
+                item = {**item, 'url': url}
                 args = self.item_args(options, item)
                 parse_args([*args, url])  # fail fast on bad extra args
                 meta = dict(item.get('meta') or {})
@@ -308,7 +316,7 @@ def make_handler(app: App, port: int):
                 return self._send(403, {'error': str(e)})
             except Exception as e:
                 message = str(e).replace('ERROR: ', '', 1) or e.__class__.__name__
-                return self._send(400, {'error': message})
+                return self._send(400, {'error': message, 'hint': error_hint(message)})
 
         def _static(self, path):
             if path in ('', '/'):

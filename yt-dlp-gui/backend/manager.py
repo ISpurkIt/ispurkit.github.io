@@ -1,6 +1,7 @@
 """Download queue: runs yt-dlp jobs in worker threads and tracks their progress."""
 
 import contextlib
+import importlib.util
 import io
 import itertools
 import optparse
@@ -17,6 +18,7 @@ from yt_dlp.postprocessor.common import PostProcessor
 from yt_dlp.utils import DownloadCancelled
 
 from . import options as opt
+from .sites import error_hint
 
 APP_DIR = Path(__file__).resolve().parent.parent
 _parse_lock = threading.Lock()
@@ -54,6 +56,21 @@ def find_ffmpeg():
     if local.is_file():
         return str(local)
     return shutil.which('ffmpeg')
+
+
+def impersonate_status():
+    """Whether yt-dlp can impersonate a browser (needs curl_cffi; TikTok and others rely on it)."""
+    from yt_dlp import dependencies
+    if not dependencies.curl_cffi:
+        if importlib.util.find_spec('curl_cffi'):
+            return {'state': 'restart', 'version': None, 'error': 'curl_cffi установлен — перезапустите приложение'}
+        return {'state': 'missing', 'version': None, 'error': 'curl_cffi не установлен'}
+    version = getattr(dependencies.curl_cffi, '__version__', None)
+    try:
+        from yt_dlp.networking import _curlcffi  # noqa: F401 - raises ImportError for unsupported versions
+    except ImportError as e:
+        return {'state': 'unsupported', 'version': version, 'error': str(e)}
+    return {'state': 'ok', 'version': version, 'error': ''}
 
 
 def ffmpeg_args():
@@ -145,6 +162,7 @@ class Task:
         self.playlist_count = None
         self.files = []
         self.last_error = ''
+        self.hint = ''
         self.created = time.time()
         self.started = None
         self.finished = None
@@ -278,6 +296,10 @@ class Task:
                 self.add_log(traceback.format_exc(), level='error')
         self.speed = 0
         self.eta = None
+        self.hint = ''
+        if self.status == 'error':
+            errors = ' '.join(l['msg'] for l in self.log if l['level'] == 'error')
+            self.hint = error_hint(f'{self.last_error} {errors}')
         self.finished = time.time()
         self.manager.on_task_finished(self)
 
@@ -301,6 +323,7 @@ class Task:
             'playlist_count': self.playlist_count,
             'files': self.files,
             'error': self.last_error,
+            'hint': self.hint,
             'created': self.created,
             'started': self.started,
             'finished': self.finished,

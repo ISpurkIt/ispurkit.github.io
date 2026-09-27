@@ -6,6 +6,7 @@ keeps behaviour identical to the CLI and lets us show the exact command.
 """
 
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -85,6 +86,10 @@ def output_args(opts):
         args += ['-P', os.path.expanduser(output_dir)]
 
     template = _str(opts, 'filename_template') or '%(title)s [%(id)s].%(ext)s'
+    limit = _str(opts, 'title_limit')
+    if limit.isdigit() and int(limit) > 0:
+        # TikTok/Twitter "titles" are whole post texts and easily exceed the 255-byte file name limit
+        template = re.sub(r'%\((title|fulltitle)\)s', rf'%(\1).{int(limit)}s', template)
     if opts.get('playlist_numbering') and not opts.get('no_playlist'):
         template = '%(playlist_index&{} - |)s' + template
     if opts.get('playlist_subfolder') and not opts.get('no_playlist'):

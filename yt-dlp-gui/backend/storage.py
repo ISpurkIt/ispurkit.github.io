@@ -40,6 +40,7 @@ DEFAULT_OPTIONS = {
     # Output
     'output_dir': default_download_dir(),
     'filename_template': '%(title)s [%(id)s].%(ext)s',
+    'title_limit': '100',         # max characters of the title in file names, '' = no limit
     'playlist_subfolder': True,
     'playlist_numbering': True,
     'restrict_filenames': False,
@@ -84,6 +85,9 @@ DEFAULT_OPTIONS = {
     'concurrent_fragments': '4',
     'geo_bypass_country': '',
     'impersonate': '',
+
+    # Site-specific
+    'tiktok_h264': True,          # prefer H.264 over HEVC on TikTok
 
     # Misc
     'use_archive': False,

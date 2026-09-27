@@ -54,6 +54,7 @@
   <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A5.6 5.6 0 0 0 22 9.8C22 5.5 17.5 2 12 2z"/><circle cx="7.5" cy="10.5" r="1.2"/><circle cx="12" cy="7" r="1.2"/><circle cx="16.5" cy="10.5" r="1.2"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
   <symbol id="i-cookie" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><circle cx="8.5" cy="8.5" r=".8"/><circle cx="16" cy="15.5" r=".8"/><circle cx="12" cy="12" r=".8"/><circle cx="11" cy="17" r=".8"/><circle cx="7" cy="14" r=".8"/></symbol>
+  <symbol id="i-tiktok" viewBox="0 0 24 24"><path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 3c.4 2.6 2.3 4.6 5 5"/></symbol>
   <symbol id="i-logo" viewBox="0 0 48 48"><path d="M24 6v24" stroke-width="4.5"/><path d="M14 21l10 10 10-10" stroke-width="4.5"/><path d="M10 40h28" stroke-width="4.5"/></symbol>
 </svg>
 
@@ -97,7 +98,7 @@
     <section class="page active" id="page-download">
       <header class="hero">
         <h1>Что будем <span class="grad-text">скачивать</span>?</h1>
-        <p class="sub">Вставьте ссылку на видео, плейлист или канал YouTube.</p>
+        <p class="sub">Вставьте ссылку на видео, плейлист или канал — YouTube, X (Twitter), TikTok.</p>
       </header>
 
       <div class="card url-card" id="url-card">
@@ -111,6 +112,11 @@
         <div class="url-batch" id="url-batch" hidden>
           <textarea id="urls" rows="6" placeholder="По одной ссылке на строку&#10;https://youtu.be/…&#10;https://www.youtube.com/playlist?list=…" spellcheck="false"></textarea>
           <div class="batch-foot"><span id="batch-count" class="muted">0 ссылок</span></div>
+        </div>
+        <div class="url-banner" id="tiktok-banner" hidden>
+          <svg class="ic"><use href="#i-tiktok"/></svg>
+          <span>Для TikTok нужна имитация браузера (библиотека <code>curl_cffi</code>) — без неё TikTok часто блокирует загрузку.</span>
+          <button class="btn primary small" data-install-imp><svg class="ic"><use href="#i-download"/></svg><span>Установить</span></button>
         </div>
         <div class="url-foot">
           <label class="mini-switch"><input type="checkbox" id="batch-toggle"><i></i><span>Пакетный режим</span></label>
@@ -230,6 +236,10 @@
                 <button data-token="%(ext)s">расширение</button>
               </div>
             </div>
+            <div class="field">
+              <label>Макс. длина названия в имени файла <small class="muted">— описания TikTok и твиты бывают очень длинными; пусто — без ограничения</small></label>
+              <input type="number" min="0" max="240" data-opt="title_limit" class="mono" placeholder="без ограничения" style="max-width:220px">
+            </div>
             <div class="rows">
               <label class="row"><div><b>Плейлист — в отдельную папку</b><small>Папка с названием плейлиста</small></div><span class="switch"><input type="checkbox" data-opt="playlist_subfolder"><i></i></span></label>
               <label class="row"><div><b>Нумеровать видео плейлиста</b><small>«01 - Название»</small></div><span class="switch"><input type="checkbox" data-opt="playlist_numbering"><i></i></span></label>
@@ -321,6 +331,22 @@
                 <label class="row"><div><b>В случайном порядке</b></div><span class="switch"><input type="checkbox" data-opt="playlist_random"><i></i></span></label>
               </div>
             </div>
+          </div>
+        </details>
+
+        <details class="card acc" data-acc="tiktok">
+          <summary><svg class="ic acc-ic"><use href="#i-tiktok"/></svg><b>TikTok</b><span class="acc-sum" data-sum="tiktok"></span><svg class="ic chev"><use href="#i-chevron"/></svg></summary>
+          <div class="acc-body">
+            <div class="imp-status" data-imp-status></div>
+            <div class="rows">
+              <label class="row"><div><b>Совместимый кодек H.264</b><small>Лучшие потоки TikTok часто в HEVC — такие файлы не открываются в стандартном плеере Windows</small></div><span class="switch"><input type="checkbox" data-opt="tiktok_h264"><i></i></span></label>
+            </div>
+            <ul class="tips">
+              <li>Подходят любые ссылки: <code>tiktok.com/@автор/video/…</code>, короткие <code>vm.tiktok.com/…</code> и <code>vt.tiktok.com/…</code>, мобильные <code>m.tiktok.com/…</code>.</li>
+              <li>Ссылка на профиль <code>tiktok.com/@автор</code> откроется как плейлист — можно выбрать нужные ролики.</li>
+              <li>Приватные и 18+ ролики: выберите браузер, где вы вошли в TikTok, в «Сеть и авторизация → Cookies из браузера».</li>
+              <li>Фото-карусели: yt-dlp умеет скачивать из них только музыку и обложку — используйте режим «Только аудио».</li>
+            </ul>
           </div>
         </details>
 
@@ -483,6 +509,7 @@
           <div class="kv"><span>Версия yt-dlp</span><b id="kv-ytdlp" class="mono"></b></div>
           <div class="kv"><span>Python</span><b id="kv-python" class="mono"></b></div>
           <div class="kv"><span>ffmpeg</span><b id="kv-ffmpeg" class="mono"></b></div>
+          <div class="kv"><span>Имитация браузера (curl_cffi)</span><b id="kv-imp" class="mono"></b></div>
           <div class="kv"><span>Папка настроек</span><b id="kv-config" class="mono"></b></div>
           <div class="ffmpeg-help" id="ffmpeg-help" hidden>
             <svg class="ic"><use href="#i-alert"/></svg>
@@ -490,6 +517,7 @@
               Установите ffmpeg (<code>winget install ffmpeg</code> / <code>brew install ffmpeg</code> / <code>sudo apt install ffmpeg</code>)
               или положите <code>ffmpeg</code> в папку <code>bin</code> рядом с приложением и перезапустите его.</div>
           </div>
+          <div class="imp-status" data-imp-status></div>
           <div class="btn-row">
             <button class="btn primary" id="btn-update"><svg class="ic"><use href="#i-up"/></svg><span>Обновить yt-dlp</span></button>
             <button class="btn ghost" id="btn-restart"><svg class="ic"><use href="#i-retry"/></svg><span>Перезапустить</span></button>
